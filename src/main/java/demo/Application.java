@@ -15,6 +15,7 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.E
 import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.OAuth2ResourceServerConfigurer;
+import org.springframework.security.oauth2.provider.ClientDetailsService;
 import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
 import org.springframework.security.oauth2.provider.token.JwtTokenServices;
 import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
@@ -37,8 +38,10 @@ public class Application {
 	}
 	
 	@Bean
-	public JwtTokenServices tokenServices() {
-		return new JwtTokenServices();
+	public JwtTokenServices tokenServices(ClientDetailsService clientDetails) {
+		JwtTokenServices tokenServices = new JwtTokenServices();
+		tokenServices.setClientDetailsService(clientDetails);
+		return tokenServices;
 	}
 
 	@Configuration
@@ -102,7 +105,7 @@ public class Application {
 		        .withClient("my-client-with-secret")
 		            .authorizedGrantTypes("client_credentials", "password")
 		            .authorities("ROLE_CLIENT")
-		            .scopes("read")
+		            .scopes("read", "write")
 		            .resourceIds("sparklr")
 		            .secret("secret");
 		// @formatter:on

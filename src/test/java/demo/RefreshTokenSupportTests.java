@@ -7,18 +7,13 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Map;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.IntegrationTest;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.common.DefaultOAuth2AccessToken;
 import org.springframework.security.oauth2.common.OAuth2AccessToken;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -27,13 +22,7 @@ import org.springframework.util.MultiValueMap;
  * @author Dave Syer
  */
 @SpringApplicationConfiguration(classes=Application.class)
-@RunWith(SpringJUnit4ClassRunner.class)
-@WebAppConfiguration
-@IntegrationTest
-public class RefreshTokenSupportTests {
-
-	@Rule
-	public ServerRunning serverRunning = ServerRunning.isRunning();
+public class RefreshTokenSupportTests extends AbstractIntegrationTests {
 
 	/**
 	 * tests a happy-day flow of the refresh token provider.
@@ -41,7 +30,7 @@ public class RefreshTokenSupportTests {
 	@Test
 	public void testHappyDay() throws Exception {
 
-		OAuth2AccessToken accessToken = getAccessToken("read", "my-trusted-client");
+		OAuth2AccessToken accessToken = getAccessToken("read write", "my-trusted-client");
 
 		// now use the refresh token to get a new access token.
 		assertNotNull(accessToken.getRefreshToken());
@@ -50,8 +39,8 @@ public class RefreshTokenSupportTests {
 
 		// make sure the new access token can be used.
 		verifyTokenResponse(newAccessToken.getValue(), HttpStatus.OK);
-		// make sure the old access token isn't valid anymore.
-		verifyTokenResponse(accessToken.getValue(), HttpStatus.UNAUTHORIZED);
+		// the old access token is still valid because there is no state on the server.
+		verifyTokenResponse(accessToken.getValue(), HttpStatus.OK);
 
 	}
 
@@ -66,6 +55,7 @@ public class RefreshTokenSupportTests {
 		MultiValueMap<String, String> formData = new LinkedMultiValueMap<String, String>();
 		formData.add("grant_type", "refresh_token");
 		formData.add("client_id", "my-trusted-client");
+		formData.add("scope", "read");
 		formData.add("refresh_token", refreshToken);
 
 		@SuppressWarnings("rawtypes")
