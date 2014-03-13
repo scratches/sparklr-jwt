@@ -3,6 +3,7 @@ package demo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +15,9 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.E
 import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.OAuth2ResourceServerConfigurer;
+import org.springframework.security.oauth2.provider.token.AuthorizationServerTokenServices;
+import org.springframework.security.oauth2.provider.token.JwtTokenServices;
+import org.springframework.security.oauth2.provider.token.ResourceServerTokenServices;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -31,10 +35,18 @@ public class Application {
 	public String home() {
 		return "Hello World";
 	}
+	
+	@Bean
+	public JwtTokenServices tokenServices() {
+		return new JwtTokenServices();
+	}
 
 	@Configuration
 	@EnableResourceServer
 	protected static class ResourceServer extends ResourceServerConfigurerAdapter {
+		
+		@Autowired
+		private ResourceServerTokenServices tokenServices;
 
 		@Override
 		public void configure(HttpSecurity http) throws Exception {
@@ -49,7 +61,7 @@ public class Application {
 
 		@Override
 		public void configure(OAuth2ResourceServerConfigurer resources) throws Exception {
-			resources.resourceId("sparklr");
+			resources.resourceId("sparklr").tokenServices(tokenServices);
 		}
 
 	}
@@ -59,11 +71,14 @@ public class Application {
 	protected static class OAuth2Config extends AuthorizationServerConfigurerAdapter {
 
 		@Autowired
+		private AuthorizationServerTokenServices tokenServices;
+
+		@Autowired
 		private AuthenticationManager authenticationManager;
 
 		@Override
 		public void configure(OAuth2AuthorizationServerConfigurer oauthServer) throws Exception {
-			oauthServer.authenticationManager(authenticationManager);
+			oauthServer.authenticationManager(authenticationManager).tokenService(tokenServices);
 		}
 
 		@Override
